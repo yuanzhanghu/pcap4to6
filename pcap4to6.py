@@ -48,15 +48,19 @@ def convert4to6 (pkt):
     ether.dst = pkt.dst;
     header6 = header4to6 (pkt['IP']);
 
-    newpkt = ether/header6;
     if ('TCP' in pkt):
-        newpkt = newpkt / pkt['TCP'] / payload4to6(pkt['TCP'].payload);
-        del pkt["TCP"].chksum;
+        l4type = 'TCP';
     elif ('UDP' in pkt):
-        newpkt = newpkt / pkt['UDP'] / payload4to6(pkt['UDP'].payload);
-        del pkt["UDP"].chksum
+        l4type = 'UDP';
     else:
-        newpkt = newpkt / pkt['IP'].payload;
+        l4type = None;
+    if (l4type == 'TCP' or l4type == 'UDP'):
+        newpayload = payload4to6(pkt[l4type].payload);
+        pkt[l4type].remove_payload();
+        newpkt = ether /header6 / pkt[l4type] / newpayload;
+        del pkt[l4type].chksum;
+    else:
+        newpkt = ether /header6 / pkt['IP'].payload;
     return newpkt;
     
 if __name__ == "__main__":
